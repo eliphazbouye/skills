@@ -1,13 +1,13 @@
 ---
 name: remember
-description: Wrap up a work session by compressing what happened — decisions made, patterns established, progress completed — into the persistent memory store so the next session continues without re-explaining. Use at the end of a session, when the user says "remember this", "let's wrap up", "save where we are", or before stopping work you'll resume later.
+description: Wrap up a work session by compressing what happened — decisions made, patterns established, progress completed — into the project-local context/memory.md so the next session in this project continues without re-explaining. Use at the end of a session, when the user says "remember this", "let's wrap up", "save where we are", or before stopping work you'll resume later.
 ---
 
 # Remember
 
-The failure this prevents: every session starts from zero. You spend the first ten minutes re-explaining what was decided yesterday, and sometimes the agent contradicts a decision it made last time because nothing recorded it. This skill captures the session's durable conclusions into memory so the next session opens with continuity instead of amnesia.
+The failure this prevents: every session starts from zero. You spend the first ten minutes re-explaining what was decided yesterday, and sometimes the agent contradicts a decision it made last time because nothing recorded it. This skill captures the session's durable conclusions into a single `context/memory.md` file so the next session in *this* project opens with continuity instead of amnesia.
 
-The memory store does the loading for you. Files in the memory directory, indexed by `memory.md`, are surfaced into context at the start of each session. Your job here is only the *writing* — turning a messy session into a few clean, durable facts.
+This memory is **project-local, not global**. It lives in the project's `context/` folder as `memory.md`, travels with the project, and is shared by anyone (or any agent) working in this repo. Do not write to the global `~/.claude` memory store — everything here goes in the project's own `context/memory.md`.
 
 ## What to capture (and what to skip)
 
@@ -26,47 +26,53 @@ Do **not** capture: anything the repo, git history, or CLAUDE.md already records
 
 Scan what actually happened this session. Pull out the handful of conclusions that outlive it — the decisions, patterns, progress, and constraints above. Most sessions yield 1–4 memories, not ten. Prefer few, sharp facts over many soft ones.
 
-### 2. Reconcile before writing
+### 2. Read the existing memory.md and reconcile
 
-For each candidate, check the existing memory directory and `memory.md` first:
+Look for `context/memory.md`. If it exists, read it first. For each candidate fact:
 
-- **Already covered?** Update that file instead of creating a near-duplicate.
-- **Now wrong / superseded?** A decision reversed this session means the old memory is stale — rewrite or delete it. Contradictory memories are worse than none; they are exactly what makes the agent contradict itself.
-- **Genuinely new?** Write a new file.
+- **Already covered?** Update that entry in place instead of adding a near-duplicate.
+- **Now wrong / superseded?** A decision reversed this session means the old entry is stale — rewrite or delete it. Contradictory memories are worse than none; they are exactly what makes the agent contradict itself.
+- **Genuinely new?** Add a new entry.
 
-### 3. Write each memory as one file
+If `context/memory.md` does not exist yet, create it (and the `context/` folder if needed).
 
-One fact per file. Frontmatter:
+### 3. Write the facts into memory.md
+
+Keep one file, `context/memory.md`, organized by section. Each fact is a bullet, written in the present tense and self-contained, so it reads correctly with no memory of this conversation. Convert relative dates ("yesterday") to absolute ones. Suggested structure:
 
 ```markdown
----
-name: <short-kebab-case-slug>
-description: <one-line summary — used to decide relevance during recall>
-metadata:
-  type: user | feedback | project | reference
----
+# Project Memory
 
-<the fact. For feedback and project, follow with **Why:** and **How to apply:** lines.
-Link related memories with [[their-name]].>
+> Project-local memory for agents. Read this at the start of a session; update it at the end.
+
+## Decisions
+- Using Postgres, not SQLite — needs concurrent writes. (2026-06-09)
+
+## Patterns
+- API handlers return a Result type, never throw.
+
+## Progress
+- Auth flow complete. Next: token refresh.
+
+## Constraints & preferences
+- Keep dependencies minimal — user prefers stdlib over new packages. Why: easier audits.
 ```
 
-Type guide: `project` — ongoing work, goals, decisions, progress (convert relative dates like "yesterday" to absolute). `feedback` — how the user wants you to work, including the why. `user` — who they are. `reference` — pointers to external resources (URLs, tickets, dashboards). Link liberally with `[[name]]`; a link to a memory that doesn't exist yet is fine — it marks one worth writing later.
+Only include sections that have content. Keep the file tight — prune stale bullets as you go rather than letting it grow into a log.
 
-Write the fact in the present tense, self-contained, so it reads correctly with no memory of this conversation.
+### 4. Make sure it gets read next time
 
-### 4. Update the index
+`context/memory.md` does not auto-load into context at session start (unlike the global store). On the **first** time you create it, ensure the next session will actually read it: check `CLAUDE.md` at the project root for a line pointing to it, and if there isn't one, add:
 
-For each new memory, add one line to `MEMORY.md`:
-
-```
-- [Title](file.md) — short hook of what it covers
+```markdown
+- At the start of a session, read `context/memory.md` for project decisions, patterns, and progress.
 ```
 
-Update the existing line if you edited a file; remove it if you deleted one. Never put memory content in `MEMORY.md` itself — it is the index loaded every session, one line per memory.
+Create `CLAUDE.md` if it doesn't exist. Skip this step if the pointer is already there.
 
 ### 5. Confirm
 
-Tell the user, briefly, what you saved and what you updated or removed — so they can correct a mischaracterized decision before it carries into the next session.
+Tell the user, briefly, what you saved into `context/memory.md` and what you updated or removed — so they can correct a mischaracterized decision before it carries into the next session.
 
 ## The bar
 
