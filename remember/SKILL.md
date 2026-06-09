@@ -7,7 +7,7 @@ description: Wrap up a work session by compressing what happened — decisions m
 
 The failure this prevents: every session starts from zero. You spend the first ten minutes re-explaining what was decided yesterday, and sometimes the agent contradicts a decision it made last time because nothing recorded it. This skill captures the session's durable conclusions into memory so the next session opens with continuity instead of amnesia.
 
-The memory store does the loading for you. Files in the memory directory, indexed by `memory.md`, are surfaced into context at the start of each session. Your job here is only the *writing* — turning a messy session into a few clean, durable facts.
+The memory store does the loading for you. Files in the memory directory, indexed by `./memory.md`, are surfaced into context at the start of each session. Your job here is only the *writing* — turning a messy session into a few clean, durable facts.
 
 ## What to capture (and what to skip)
 
@@ -56,13 +56,13 @@ Write the fact in the present tense, self-contained, so it reads correctly with 
 
 ### 4. Update the index
 
-For each new memory, add one line to `MEMORY.md`:
+For each new memory, add one line to `./memory.md`:
 
 ```
 - [Title](file.md) — short hook of what it covers
 ```
 
-Update the existing line if you edited a file; remove it if you deleted one. Never put memory content in `MEMORY.md` itself — it is the index loaded every session, one line per memory.
+Update the existing line if you edited a file; remove it if you deleted one. Never put memory content in `./memory.md` itself — it is the index loaded every session, one line per memory.
 
 ### 5. Confirm
 
