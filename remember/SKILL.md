@@ -20,7 +20,7 @@ Capture only what a future session would otherwise have to ask about or rediscov
 
 Do **not** capture: anything the repo, git history, or CLAUDE.md already records; things that only mattered inside this conversation; or vague summaries ("worked on the app"). If it can be re-derived by reading the code, it is not a memory.
 
-**Don't duplicate the `architect` files — point to them.** A significant decision already recorded as an ADR in `context/project/adr/` gets at most a one-line pointer ("Auth uses JWT — ADR-0001"), not a restatement. Progress on a planned feature lives in its `context/features/<slug>/build-plan.md` checkboxes; memory only says which feature is in progress and where to resume ("`auth-login` in progress — resume at S3 in its build-plan"). If a decision made this session is significant (hard to reverse, cross-cutting, sets a convention) and has no ADR yet, suggest running `/architect` to record it rather than burying it in memory.
+**Don't duplicate the `architect` files — point to them.** A significant decision already recorded as an ADR in `context/project/adr/` gets at most a one-line pointer ("Auth uses JWT — ADR-0001"), not a restatement. Progress on a planned feature lives in its `context/features/<slug>/build-plan.md` checkboxes; memory only says which feature is in progress and where to resume ("`auth-login` in progress — resume at S3 in its build-plan"). Mistakes found in a review belong in `context/project/lessons.md` (written by `review`), not in memory. If a decision made this session is significant (hard to reverse, cross-cutting, sets a convention) and has no ADR yet, suggest running `/architect` to record it rather than burying it in memory.
 
 ## Process
 

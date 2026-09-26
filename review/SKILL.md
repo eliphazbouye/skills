@@ -1,60 +1,89 @@
 ---
 name: review
-description: Review a feature an agent just built before you trust it. Checks the implementation against the plan it was supposed to follow, against the project's architecture boundaries, and against production-readiness — then reports issues grouped by severity (critical / important / minor). Never autofixes; you stay in control of what gets changed. Use after an agent finishes a feature, before committing, or whenever the user says "review this", "review the feature", or "is this production ready".
+description: Review a feature an agent just built before you trust it, using a fresh reviewer subagent that never saw the author's reasoning. Runs the project's tests/typecheck/lint, checks the implementation against the plan (spec, acceptance criteria, ADRs), the architecture boundaries and production-readiness, and reports proven issues grouped by severity (critical / important / minor). Records each round in the feature's review log and turns recurring mistakes into project lessons so future sessions don't repeat them. Never fixes without your choice. Use after an agent finishes a feature, before committing, after fixing review findings ("re-review"), or whenever the user says "review this", "review the feature", or "is this production ready".
 ---
 
 # Review
 
-The failure this prevents: an agent builds a feature — say 400 lines — you skim it, it looks fine, you commit. Three days later a bug surfaces that a careful read would have caught. This skill is that careful read, done before you commit, by someone other than the author.
+The failure this prevents: an agent builds a feature — say 400 lines — you skim it, it looks fine, you commit. Three days later a bug surfaces that a careful read would have caught. And next month, another agent makes the same mistake in another feature, because nothing learned from the first one. This skill is that careful read, done before you commit, by someone other than the author — and the memory that stops the same mistake twice.
 
-The goal is not to rewrite the code. The goal is to **find what's wrong and hand the decision back to you**. This skill reports; it never autofixes. You decide what to act on.
+"Someone other than the author" is literal: **the review itself runs in a fresh subagent**. The agent that built the feature carries its own reasoning in context — why each shortcut seemed fine, which edge case it decided didn't matter — and reads its code through that lens. A subagent that sees only the intent documents and the diff reads what's actually there. Your job in the main session is to scope the review, hand it off cleanly, relay the result faithfully, and record what it taught.
 
 ## The rules
 
-1. **Never autofix.** Do not edit, refactor, or "quickly clean up" anything. Even an obvious one-line fix gets reported, not applied. The moment you start editing, the user stops reviewing — that defeats the skill. The only output is the report.
-2. **Severity is honest, not inflated.** A `critical` is something that will break in production or corrupt data. Don't promote a style nit to `important` to look thorough, and don't bury a real data-loss bug under minor noise. If there are no critical issues, say so plainly.
-3. **Every issue is concrete.** Each finding names the file and line, says what's wrong, and says why it matters. "Consider improving error handling" is not a finding. "`service.ts:88` swallows the DB error and returns an empty list, so callers can't distinguish 'no rows' from 'query failed'" is — in a real report that file:line is a clickable link.
-4. **Review against intent, not taste.** Judge the code against the plan it was meant to follow and the project's own conventions — not against how you'd have written it. A different-but-valid choice is not a finding.
+1. **Never fix without the user's choice.** Don't edit, refactor, or "quickly clean up" anything while reviewing. Fixes happen only after the report, on what the user explicitly picks (step 6).
+2. **Don't coach the reviewer.** The subagent gets the instructions, the intent documents and the change — never the author's explanations, the session's reasoning, or hints about which parts are "fine". Those are exactly the blind spots the handoff exists to remove.
+3. **Relay, don't soften.** You don't drop, downgrade, or explain away a reviewer's finding — even if you (or the author session) disagree. If you think one is wrong, keep it and add your objection next to it, marked as yours. The user decides.
+4. **Learn only what generalizes.** A lesson is a rule a future agent would follow on a *different* feature. A one-off bug is fixed and logged, not turned into a lesson.
 
 ## Process
 
 ### 1. Establish what was supposed to be built
 
-Before reading the code, find the intent to judge it against:
+Locate the intent the code will be judged against — as **file paths**, so the reviewer reads the source, not your summary of it:
 
-- **The plan.** If the feature was planned with the `architect` skill, its folder is `context/features/<slug>/`: read `spec.md` (behavior and acceptance criteria `AC-n`), `use-cases.md` if present, and `build-plan.md` (the steps, and which are ticked as done). Otherwise use a ticket, a PR description, or the prompt that kicked off the work. Ask the user for it if it's not obvious — "what was this feature supposed to do?" is a fair opening question.
-- **The architecture.** Read `context/project/architecture.md` and the ADRs in `context/project/adr/` (or the project's own ADR folder, e.g. `docs/adr/`) — accepted ADRs are binding decisions the code must respect. Also read CLAUDE.md and any docs describing module boundaries, layering, or conventions. These define what "respects the architecture" means for this project. If there's no written architecture, infer the boundaries from the surrounding code and say you're doing so.
+- **The plan.** If the feature was planned with the `architect` skill, its folder is `context/features/<slug>/`: `spec.md` (behavior and acceptance criteria `AC-n`), `use-cases.md` if present, `build-plan.md` (the steps, and which are ticked). Otherwise a ticket, a PR description, or the request that kicked off the work — if that request is only in this conversation, quote it verbatim; don't paraphrase. If nothing is obvious, ask the user: "what was this feature supposed to do?"
+- **The architecture.** `context/project/architecture.md`, the ADRs in `context/project/adr/` (or the project's own ADR folder, e.g. `docs/adr/`), CLAUDE.md, and any docs on boundaries or conventions.
+- **The lessons.** `context/project/lessons.md` if it exists — mistakes this project already made.
+- **The UI registry.** `context/project/ui-registry.md`, if the change touches UI files.
+- **The previous round.** `context/features/<slug>/review.md` if it exists. If it has open findings and the user is asking after fixes, this is a **re-review** (see step 2).
 
-If you can't find a plan, don't block — review against the architecture and production-readiness, and note in the report that no plan was available to check against.
+No plan found? Don't block — the review runs against architecture and production-readiness, and the report says no plan was available.
 
 ### 2. Identify the change under review
 
-Determine exactly what to review. Prefer the diff, not the whole repo:
+- **Uncommitted work:** `git diff` + `git diff --staged` + `git status`.
+- **Branch or PR:** `git diff <base>...HEAD`.
+- **Specific files** the user points at: those plus what they directly touch.
+- **Re-review:** only what changed since the last round (from the base/HEAD recorded in `review.md`), plus the locations of its open findings — the reviewer checks each open finding is resolved and that the fixes didn't introduce new problems.
 
-- If it's uncommitted work: `git diff` / `git diff --staged` and `git status`.
-- If it's a branch or PR: diff against the base.
-- If the user points at specific files, review those plus what they directly touch.
+Pin it down as something the reviewer can reproduce — exact git command(s) plus the list of changed files — and check the size with `git diff --stat`.
 
-Read the changed code in full, and read enough of the surrounding code to understand how it's called and what it depends on. A 400-line feature is small enough to read every line — do that.
+### 3. Hand off to the reviewer subagent(s)
 
-### 3. Review across three lenses
+Launch the review with the Agent tool, `general-purpose` subagent (it must read files and run commands). The prompt is **the full content of `reviewer-prompt.md`** (in this skill's directory), passed verbatim, followed by a section you fill in:
 
-Walk the change against each:
+```
+## This review
+- Change: <git command(s)>; files: <list>
+- Intent: <paths — spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md> | <user request, quoted verbatim> | no plan available
+- Scope: <all changed files | this slice: …>
+- Re-review of: <review.md path, open finding IDs to verify> (only for a re-review)
+- Language: write the report in <the user's language>.
+```
 
-- **Matches the plan.** Does the implementation do what it was supposed to? Look for: missing pieces of the plan, scope that quietly grew beyond it, decisions silently made differently than agreed (in `spec.md` or an ADR), and stubs/TODOs left where real behavior was expected. When a spec exists, check each acceptance criterion (`AC-n`) and say which are met, unmet, or untested — and flag `build-plan.md` steps ticked as done that the code doesn't actually deliver.
-- **Respects architecture boundaries.** Does it sit in the right layer and talk to its neighbors the right way? Look for: a layer reaching past its boundary (e.g. a controller hitting the DB directly), leaked abstractions, circular or wrong-direction dependencies, business logic in the wrong place, and conventions the rest of the codebase follows but this code breaks.
-- **Production readiness.** Will it survive contact with real traffic and real data? Look for: unhandled errors and swallowed exceptions, missing input validation, race conditions and concurrency hazards, N+1 queries and obvious performance traps, resource leaks, missing-or-misleading logging, secrets in code, auth/authorization gaps, and missing tests for the behavior that matters.
+Nothing else goes in — no summary of the implementation, no opinions (rule 2).
 
-Don't force a finding into every lens. An empty lens is a good result — report it as clean.
+**Size the handoff:**
 
-### 4. Report by severity
+- **Normal change** (up to roughly 800 changed lines): **one** reviewer.
+- **Large change** (bigger, or spanning several modules): split the diff **by module or area** — never by lens, since the worst bugs cross lenses — and launch one reviewer per slice, all in a single message so they run concurrently. Each gets the full intent and all three lenses; only one of them runs the checks (say which in its Scope).
+- **Verification (large changes, or any change with 🔴 findings marked *suspected*):** launch one more fresh subagent with the 🔴 findings only, asking it to independently confirm or refute each against the code, read-only. You don't do this check yourself — you are likely the author.
 
-Present the report directly in the conversation — do not write it to a file unless asked. Group findings into three buckets, most severe first:
+Don't review the code yourself while the subagents work, and don't start fixing anything.
 
-- **🔴 Critical** — will break in production, lose/corrupt data, or open a security hole. Must be fixed before this ships.
-- **🟡 Important** — real bugs, architecture violations, or missing safeguards that should be fixed but aren't catastrophic.
-- **⚪ Minor** — style, naming, small cleanups, nice-to-haves. Safe to defer.
+### 4. Consolidate and report
 
-For each finding: the file:line link, what's wrong, why it matters, and a suggested direction for the fix (a suggestion — not an applied change). Within each bucket, order by impact.
+Merge the reviewers' reports into one: deduplicate the same issue found in two slices (keep the higher severity), fold in the verifier's verdicts (a refuted finding stays, marked *refuted* with the verifier's reason — rule 3). Present it in the conversation, in the reviewer's format: checks, acceptance criteria, 🔴 / 🟡 / ⚪ findings with clickable `file:line`, plan gaps, recurred lessons, outside-the-diff, and the one-line verdict.
 
-End with a one-line verdict: is this ready to commit, ready after the critical/important items, or not yet. Then stop — the user decides what to do next.
+### 5. Record the round
+
+- **Feature log.** If the feature has a folder in `context/features/<slug>/`, append this round to its `review.md` (create it from `templates/review.md`): scope with base/HEAD commits, checks, acceptance criteria, verdict, and the findings table. On a re-review, update the status of earlier findings (`fixed (round N)`, `won't fix`, `disputed`) — never delete them. No feature folder → the report stays in the chat only.
+- **Plan gaps.** For each plan gap, the fix is either in the code or in the plan. Say which you recommend, and if it's the plan — a missing decision, or a deliberate departure from an ADR — suggest `/architect` to record it (a new ADR superseding the old one). Never leave an ADR contradicted silently.
+
+### 6. Learn, then hand the decision back
+
+Draft **lesson candidates** from the findings (rule 4): a finding generalizes if a future agent could make the same mistake on a different feature — a pattern, not a line of code. Also note every finding the reviewer matched to an existing lesson: that lesson *recurred*.
+
+Then ask with **one AskUserQuestion call** holding two questions:
+
+1. **"Which lessons should be recorded?"** (multiSelect) — one option per candidate, the rule as label, the finding it comes from in the description. Recommend the ones from 🔴/🟡 findings. Skip this question if there are no candidates.
+2. **"What next?"** — "Fix the 🔴 findings (Recommended)" · "Fix 🔴 + 🟡" · "Pick findings one by one" · "Nothing for now". Adjust the recommendation: no 🔴 → recommend fixing the 🟡; verdict "ready" → recommend "Nothing for now".
+
+Then:
+
+- **Write the chosen lessons** to `context/project/lessons.md` (create it from `templates/lessons.md`): a new `L-NNN` entry, stated as an instruction, with why and where it was seen. A recurred lesson gets a new line under **Seen** instead of a duplicate entry. Note the lesson IDs in the round's `review.md` section.
+- **Escalate what keeps coming back.** A lesson seen **3 times or more**, or born from a 🔴, is a sign that written advice isn't enough: propose making it automatic — a lint rule, a test, a type constraint — or at least a rule in `CLAUDE.md`. Once it's enforced, move it to the **Enforced** section: agents no longer need to remember it.
+- **Fix only what was picked.** Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
+
+If `context/project/lessons.md` was just created, make sure `CLAUDE.md` points to it. The pointer `architect` installs covers `context/project/`; if there's no such pointer, add: "Before planning or writing code, read `context/project/lessons.md` — mistakes this project already made."

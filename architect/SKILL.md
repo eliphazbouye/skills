@@ -29,13 +29,15 @@ context/
 │   ├── architecture.md           ← modules, layers, boundaries, key dependencies
 │   ├── memory.md                 ← session memory (written by `remember`)
 │   ├── ui-registry.md            ← UI patterns (written by `imprint`)
+│   ├── lessons.md                ← recurring mistakes found in reviews (written by `review`)
 │   └── adr/
 │       └── 0001-<decision>.md    ← one file per significant decision
 └── features/                     ← one folder per feature, stable name, no date
     └── <feature-slug>/
         ├── use-cases.md
         ├── spec.md
-        └── build-plan.md
+        ├── build-plan.md
+        └── review.md             ← review rounds (written by `review`)
 ```
 
 Templates for every file live in this skill's `templates/` directory. Write generated files in the language the user is speaking with you (or the language of the project's existing docs, if they have one).
@@ -54,12 +56,12 @@ Check `context/` before anything else:
 
 Read, in this order:
 
-1. `context/README.md`, then everything in `context/project/` — `architecture.md`, `memory.md`, `ui-registry.md`, and every ADR (at least the title and status of each; read in full the ones related to this feature).
+1. `context/README.md`, then everything in `context/project/` — `architecture.md`, `memory.md`, `ui-registry.md`, `lessons.md`, and every ADR (at least the title and status of each; read in full the ones related to this feature).
 2. `context/features/` — list the folders. **If the request extends or changes an existing feature, work in its folder** and read its three files; don't create a second folder for the same feature.
 3. `./docs/` if it exists, plus `CLAUDE.md` and the README.
 4. The existing code this feature will touch, so questions and recommendations are grounded in what's actually there.
 
-Treat accepted ADRs and `architecture.md` as ground truth — they answer some questions for you.
+Treat accepted ADRs and `architecture.md` as ground truth — they answer some questions for you. Treat the active entries of `lessons.md` as constraints on the plan: when a lesson applies to this feature, build it into the relevant step (and its verification) and cite it (`L-NNN`) — so the mistake is designed out, not just remembered.
 
 ### 2. Size the feature and surface the unmade decisions
 
@@ -120,6 +122,7 @@ Only after explicit approval, and before writing any code:
 
 ### 6. Implement, following the plan
 
+- Before writing code, re-read the active lessons in `context/project/lessons.md`; they are mistakes this project already made.
 - Work through `build-plan.md` in order, ticking each step (`- [x]`) as it's done and verified, and keep its `Status:` line current (`in-progress`, then `done`). If the session stops midway, the next one resumes from the first unticked step.
 - **A new material decision appears?** Stop coding, ask via AskUserQuestion (with a recommendation), then record the answer — in `spec.md`, or as a new ADR if significant — and adjust `build-plan.md` before continuing.
 - **The plan turns out wrong** (a step is impossible, a premise was false)? Stop and say so; don't silently reroute.
