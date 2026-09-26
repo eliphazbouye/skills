@@ -20,7 +20,7 @@ The goal is not to produce a big document. The goal is to **make the implicit de
 
 ### 1. Read the context
 
-Read everything in `./context/` (the context folder in the current project's working directory). These files describe the project's goals, conventions, prior decisions, and constraints. Treat them as ground truth — they answer some questions for you.
+Read everything in `./context/`, `docs`(the context/docs folder in the current project's working directory). These files describe the project's goals, conventions, prior decisions, and constraints. Treat them as ground truth — they answer some questions for you.
 
 If there is no `context/` folder, say so and offer to proceed from what's in the repo (CLAUDE.md, README, the code itself). Don't block on it.
 
