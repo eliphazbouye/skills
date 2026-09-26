@@ -17,7 +17,7 @@ context/
     └── <feature-slug>/
         ├── use-cases.md   ← who does what, in which scenario
         ├── spec.md        ← what it must do + acceptance criteria
-        └── build-plan.md  ← how it's built, step by step, with status and open review findings (executed by skill: build)
+        └── build-plan.md  ← how it's built, step by step, with status, open review findings and PR link (skills: build, review, ship)
 ```
 
 ## Rules

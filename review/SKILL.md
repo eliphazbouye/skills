@@ -84,7 +84,7 @@ Draft **lesson candidates** from the findings (rule 4): a finding generalizes if
 Then ask with **one AskUserQuestion call** holding two questions:
 
 1. **"Which lessons should be recorded?"** (multiSelect) — one option per candidate, the rule as label, the finding it comes from in the description. Recommend the ones from 🔴/🟡 findings. Skip this question if there are no candidates.
-2. **"What next?"** — "Fix the 🔴 findings (Recommended)" · "Fix 🔴 + 🟡" · "Pick findings one by one" · "Nothing for now". Adjust the recommendation: no 🔴 → recommend fixing the 🟡; verdict "ready" → recommend "Nothing for now".
+2. **"What next?"** — "Fix the 🔴 findings (Recommended)" · "Fix 🔴 + 🟡" · "Pick findings one by one" · "Nothing for now". Adjust the recommendation: no 🔴 → recommend fixing the 🟡; verdict "ready" → replace the options with "Ship it with `/ship` (Recommended)" / "Fix the ⚪ first" / "Nothing for now".
 
 Then:
 

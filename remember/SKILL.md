@@ -63,7 +63,7 @@ Read `context/project/memory.md` (and, if it's still at the old location `contex
 
 ### S4. Keep it small
 
-`memory.md` is read at the start of every session, so every line costs context. Keep it under **~60 lines**. Over that, prune: move entries to their proper home, drop what's no longer needed, merge what overlaps. Never grow it into a log.
+`memory.md` is read at the start of every session, so every line costs context. Keep it under **~60 lines**. Over that, prune: move entries to their proper home, drop what's no longer needed, merge what overlaps. Never grow it into a log. If the whole `context/` seems out of date — not just memory — suggest `/tidy`.
 
 ### S5. Confirm, then write
 
@@ -107,7 +107,7 @@ Five lines at most:
 
 ### R3. Hand over
 
-Ask with AskUserQuestion: "Continue with <next action> (Recommended)" — through `/build` when it's a build-plan step or an open review finding — / "Work on something else" / "Review first (`/review`)" — adapt the options to the state (e.g. recommend `/review` when a feature's steps are all ticked but it was never reviewed). Don't start working before the user picks.
+Ask with AskUserQuestion: "Continue with <next action> (Recommended)" — through `/build` when it's a build-plan step or an open review finding — / "Work on something else" / "Review first (`/review`)" — adapt the options to the state (e.g. recommend `/review` when a feature's steps are all ticked but it was never reviewed, and `/ship` when it's `done`, reviewed and has no `PR:` yet). Don't start working before the user picks.
 
 ## The bar
 

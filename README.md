@@ -7,14 +7,17 @@ Chaque skill corrige une façon précise dont le travail avec un agent déraille
 ## Le cycle
 
 ```
-            ┌──────────── projet existant ────────────┐
-            │                                         │
-          map ──▶ architect ──▶ build ──▶ review ──▶ build ──▶ remember
-      cartographier   planifier    coder     vérifier   corriger    mémoriser
-                                   ▲                                   │
-                                   └──────── remember (reprise) ◀──────┘
+  projet existant
+        │
+       map ──▶ architect ──▶ build ──▶ review ──▶ build ──▶ ship
+   cartographier  planifier    coder    vérifier  corriger   livrer (PR)
+                    │  ▲
+                    ▼  │
+                   spike           en fin de session : remember ── en début : remember (reprise)
+             tester une question
+             avant de décider
 
-  à tout moment :  imprint (cohérence UI)  ·  recover (session bloquée)
+  à tout moment :  imprint (cohérence UI) · recover (session bloquée) · tidy (context/ à jour)
 ```
 
 ## Les skills
@@ -74,6 +77,33 @@ Les cases cochées du plan servent d'état : n'importe quelle session peut repre
 
 Il ne corrige rien sans ton accord.
 
+### `spike` : répondre à une question technique en essayant
+
+**Quand :** une décision ne peut pas se trancher en discutant (« cette librairie gère-t-elle le streaming dans notre runtime ? », « cette requête tient-elle sur 1 million de lignes ? »). Souvent appelé depuis `architect`.
+
+**Ce qu'il fait :**
+- Il formule **une seule question**, avec un critère de réussite et un budget (en tentatives ou en temps) fixés avant de commencer.
+- Il expérimente dans un worktree ou une branche `spike/<slug>` isolée, qui n'est jamais mergée.
+- Il rapporte des faits observés : commandes lancées, résultats, mesures, versions.
+- Il enregistre la réponse là où vit la décision (l'ADR, la spec, ou les pistes écartées de `memory.md`), puis supprime le code.
+
+### `ship` : livrer la fonctionnalité
+
+**Quand :** la fonctionnalité est construite et relue, et elle est prête pour une PR.
+
+**Ce qu'il fait :**
+- **Il vérifie que tout est prêt**, et s'arrête sinon :
+  - le build plan est à `done` ;
+  - aucun problème 🔴/🟡 n'est ouvert ;
+  - la dernière review est plus récente que le dernier changement de code ;
+  - les tests, le typecheck, le lint et le build passent ;
+  - le diff ne contient ni debug oublié, ni `.only`, ni secret.
+- Il propose de nettoyer les commits qui n'ont pas encore été poussés.
+- Il rédige les notes de migration (schéma, variables d'environnement, dépendances, changements cassants) et l'entrée du changelog.
+- Il écrit la description de la PR à partir de la spec, des critères d'acceptation, des ADR et de la review.
+
+Il ne pousse et n'ouvre la PR qu'après ta validation du texte.
+
 ### `remember` : garder le fil entre les sessions
 
 **Quand :** en fin de session (« on s'arrête là »), ou en début de session (« où on en était ? »).
@@ -109,6 +139,25 @@ Il ne modifie pas le code en masse.
 
 Chaque cas demande une correction différente, et il ne recommence à corriger qu'une fois le diagnostic posé.
 
+### `tidy` : garder `context/` juste
+
+**Quand :** toutes les quelques semaines, avant une grosse fonctionnalité, ou quand les agents semblent suivre des consignes périmées.
+
+**Ce qu'il cherche :**
+- des références cassées (`UC-n`, `AC-n`, `ADR-NNNN`, `L-NNN`) ;
+- des ADR que le code ne respecte plus ;
+- des build plans dont le statut ne correspond pas à la réalité ;
+- des leçons en double, déjà vérifiées par un lint, ou qui reviennent sans avoir été automatisées ;
+- un `memory.md` trop long ou périmé ;
+- des commandes de `CLAUDE.md` qui n'existent plus.
+
+**Ce qu'il fait des problèmes :**
+- Il les classe en *faux*, *périmé* ou *superflu*.
+- Il n'applique que les corrections que tu choisis.
+- Il renvoie le reste au skill responsable (`/map`, `/architect`, `/build`…).
+
+Il ne touche jamais au code.
+
 ## Le dossier `context/`
 
 Les skills partagent un dossier `context/` à la racine du projet. Il est commité avec le code :
@@ -127,7 +176,7 @@ context/
     └── <slug>/
         ├── use-cases.md       ← qui fait quoi                     (architect)
         ├── spec.md            ← quoi + critères d'acceptation     (architect, build)
-        └── build-plan.md      ← étapes, statut, problèmes de review (architect, build, review)
+        └── build-plan.md      ← étapes, statut, problèmes de review, lien de PR (architect, build, review, ship)
 ```
 
 **Les principes :**
@@ -155,5 +204,6 @@ Ensuite, dans Claude Code, appelle un skill avec `/architect`, `/build`, `/revie
 
 - **Nouveau projet :** `/architect` sur la première fonctionnalité. Il crée `context/`.
 - **Projet existant :** `/map`, puis `/architect`.
-- **Chaque fonctionnalité :** `/architect` → `/build` → `/review` → `/build` (corrections) → `/review` (re-review).
+- **Chaque fonctionnalité :** `/architect` (+ `/spike` si une question doit être testée) → `/build` → `/review` → `/build` (corrections) → `/review` (re-review) → `/ship`.
 - **Chaque session :** « où on en était ? » au début, `/remember` à la fin.
+- **De temps en temps :** `/tidy` pour garder `context/` juste, `/map` pour vérifier que `architecture.md` suit encore le code.

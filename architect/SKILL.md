@@ -93,6 +93,7 @@ Lead with the decision that most constrains the rest (usually scope or data mode
 - 2–4 options, recommended first with "(Recommended)", each description giving the trade-off.
 - Use `preview` when options are concrete artifacts worth comparing side by side (API shapes, schemas, folder layouts).
 - Wait. Use the answer to prune or reshape the remaining questions.
+- **A question that can't be settled without trying** ("does this library support X in our runtime?", "is this fast enough?") → offer, as one of the options, "Settle it with `/spike` first". Run the spike, then come back to this question with its evidence.
 
 Stop when nothing material is left to decide. Don't pad the conversation.
 

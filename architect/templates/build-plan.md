@@ -2,6 +2,7 @@
 
 - **Status:** draft <!-- draft | in-progress | done -->
 - **Created:** YYYY-MM-DD · **Updated:** YYYY-MM-DD
+- **PR:** — <!-- set by the ship skill -->
 - **Spec:** [spec.md](spec.md) · **ADRs:** ADR-NNNN · **Lessons applied:** L-NNN
 
 <!-- Small features without spec.md: add a short "## Spec" section here (summary, acceptance criteria, decisions). -->
