@@ -8,7 +8,7 @@
 context/
 ├── README.md              ← this file
 ├── project/               ← what holds for the whole project
-│   ├── architecture.md    ← modules, layers, boundaries, key dependencies
+│   ├── architecture.md    ← modules, layers, boundaries, key dependencies (skills: architect, map)
 │   ├── memory.md          ← session memory (skill: remember)
 │   ├── ui-registry.md     ← canonical UI patterns (skill: imprint)
 │   ├── lessons.md         ← recurring mistakes found in reviews (skill: review)

@@ -47,6 +47,7 @@ Templates for every file live in this skill's `templates/` directory. Write gene
 
 Check `context/` before anything else:
 
+- **No `context/`, but the repo already has substantial code:** the architecture should be mapped from the code before planning on top of it. Ask with AskUserQuestion: "Map the codebase first with `/map` (Recommended)" / "Minimal init and continue". On the first, follow the `map` skill, then come back to this feature.
 - **No `context/` (new project):** create `context/README.md` (from `templates/context-readme.md`), `context/project/architecture.md` (from `templates/architecture.md`, filled with what the repo actually shows — or, on an empty repo, with what this conversation establishes), and the empty `context/project/adr/` and `context/features/` folders (with a `.gitkeep` each). Then make sure the project's `CLAUDE.md` (create it if missing) contains the pointer from `templates/context-readme.md`'s "CLAUDE.md pointer" section. Tell the user in one line what you created.
 - **Old flat layout:** if `context/memory.md` or `context/ui-registry.md` exist at the root, move them into `context/project/` (use `git mv` if the repo is tracked), update any `CLAUDE.md` line pointing to the old path, and create whatever else is missing from the structure above. Tell the user what moved.
 - **Project already keeps ADRs elsewhere** (e.g. `docs/adr/`, `doc/architecture/decisions/`): keep using that folder and its numbering/format instead of `context/project/adr/`, and note its location in `context/README.md`.
