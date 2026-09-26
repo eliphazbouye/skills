@@ -90,6 +90,6 @@ Then:
 
 - **Write the chosen lessons** to `context/project/lessons.md` (create it from `templates/lessons.md`): a new `L-NNN` entry, stated as an instruction, with why and where it was seen. A recurred lesson gets a new line under **Seen** instead of a duplicate entry. Add the lesson IDs to the plan's `Lessons applied` line so later rounds know they're covered.
 - **Escalate what keeps coming back.** A lesson seen **3 times or more**, or born from a 🔴, is a sign that written advice isn't enough: propose making it automatic — a lint rule, a test, a type constraint — or at least a rule in `CLAUDE.md`. Once it's enforced, move it to the **Enforced** section: agents no longer need to remember it.
-- **Fix only what was picked.** Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
+- **Fix only what was picked**, following the `build` skill: each picked finding is an item under *Review findings*, fixed regression-test first. Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
 
 If `context/project/lessons.md` was just created, make sure `CLAUDE.md` points to it. The pointer `architect` installs covers `context/project/`; if there's no such pointer, add: "Before planning or writing code, read `context/project/lessons.md` — mistakes this project already made."

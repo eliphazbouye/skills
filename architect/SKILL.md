@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Run the architecture conversation that should happen before building any serious feature. Reads the project's context/ folder (initializing its standard structure on a new project), surfaces the decisions that haven't been made yet (auth, data model, error handling, boundaries…), asks focused questions ONE AT A TIME with a recommended option, presents a plan for approval, then writes the feature's use cases, spec, build plan and ADRs into context/ before implementing. Use before implementing a non-trivial feature, when a task has unstated design decisions, or whenever the user says "architect", "plan this feature", "let's design X before building", "conçois", "planifie cette feature", or "réfléchissons à l'archi avant de coder".
+description: Run the architecture conversation that should happen before building any serious feature. Reads the project's context/ folder (initializing its standard structure on a new project), surfaces the decisions that haven't been made yet (auth, data model, error handling, boundaries…), asks focused questions ONE AT A TIME with a recommended option, presents a plan for approval, then writes the feature's use cases, spec, build plan and ADRs into context/ and hands off to the `build` skill. Use before implementing a non-trivial feature, when a task has unstated design decisions, or whenever the user says "architect", "plan this feature", "let's design X before building", "conçois", "planifie cette feature", or "réfléchissons à l'archi avant de coder".
 ---
 
 # Architect
@@ -16,7 +16,7 @@ The goal is not to produce paperwork. The goal is to **make the implicit decisio
 3. **Surface decisions, don't make them.** When you spot a fork the user hasn't decided, name it and ask. If the user answers "you decide" / "je ne sais pas", take the recommended option and record it as **defaulted** — so it's visibly revisitable later.
 4. **Only ask what matters.** Skip decisions already settled by the context files, an existing ADR, or an obvious convention in this codebase. Don't manufacture questions to look thorough. If you pass ~6 questions, batch the remaining minor decisions into one "here are my defaults for X, Y, Z" question.
 5. **Flag contradictions, never overwrite silently.** If an answer contradicts an accepted ADR, `architecture.md`, or what the code actually does — or if the context files and the code disagree with each other — say so and ask which one wins.
-6. **Nothing is built before the plan is confirmed, and nothing is guessed after.** If a new material decision appears during implementation, stop and ask (rule 1) instead of guessing.
+6. **Nothing is built before the plan is confirmed.** This skill plans and writes the plan down; the `build` skill implements it, and stops to ask on any decision the plan didn't make.
 
 ## The context/ structure
 
@@ -119,11 +119,8 @@ Only after explicit approval, and before writing any code:
 
 **One source per fact.** Files reference each other instead of copying: the spec cites `UC-n` and `ADR-NNNN`, the build plan cites `AC-n`. Something that changes should only need editing in one place.
 
-### 6. Implement, following the plan
+### 6. Hand off to build
 
-- Before writing code, re-read the active lessons in `context/project/lessons.md`; they are mistakes this project already made.
-- Work through `build-plan.md` in order, ticking each step (`- [x]`) as it's done and verified, and keep its `Status:` line current (`in-progress`, then `done` — which requires every step and every 🔴/🟡 item under *Review findings* to be ticked). If the session stops midway, the next one resumes from the first unticked step.
-- **A new material decision appears?** Stop coding, ask via AskUserQuestion (with a recommendation), then record the answer — in `spec.md`, or as a new ADR if significant — and adjust `build-plan.md` before continuing.
-- **The plan turns out wrong** (a step is impossible, a premise was false)? Stop and say so; don't silently reroute.
+This skill stops once the files are written — implementing the plan is the `build` skill's job, and keeping it separate means an interrupted implementation can resume from the plan without re-running this conversation.
 
-When the last step is done, report briefly what was built, then suggest running `/review` (it checks the code against `spec.md`, `build-plan.md` and the ADRs) and `/remember` at the end of the session.
+Report in one line what was written where, then ask with AskUserQuestion: "Start building now with `/build` (Recommended)" / "Stop here — build later". On the first, follow the `build` skill for this feature. On the second, suggest `/remember` so the next session knows the plan is ready.
