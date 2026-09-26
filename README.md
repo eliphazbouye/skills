@@ -130,14 +130,18 @@ Il ne modifie pas le code en masse.
 
 ### `recover` : sortir d'une session qui tourne en rond
 
-**Quand :** les tentatives échouent les unes après les autres et on ne sait plus pourquoi.
+**Quand :** les tentatives échouent les unes après les autres et on ne sait plus pourquoi, ou quand `build` s'arrête après plusieurs échecs sur la même étape.
 
-**Ce qu'il fait :** il arrête de coder et cherche d'abord quel type de problème on a :
-- **un contexte pollué** par des informations périmées : il faut repartir des faits ;
-- **une supposition fausse** faite plus tôt : il faut revérifier les prémisses ;
-- **un vrai bug caché** : il faut réduire et isoler le problème.
-
-Chaque cas demande une correction différente, et il ne recommence à corriger qu'une fois le diagnostic posé.
+**Ce qu'il fait :**
+- Il arrête de coder, liste tout ce qui a été essayé, puis repart des faits : les fichiers et les sorties relus, l'environnement vérifié (cache, image Docker, versions, variables d'environnement), et ce que `context/` a dit à la session.
+- Il demande un deuxième avis à un sous-agent vierge, qui n'a jamais vu la conversation.
+- Il cherche quel type de problème on a, car chacun demande une correction différente :
+  - **un contexte pollué** : repartir des faits, éventuellement avec `/clear` puis une reprise via `remember` ;
+  - **une supposition fausse** : revérifier les prémisses, y compris celles qui viennent de `context/` ;
+  - **un vrai bug caché** : un test qui échoue, puis `git bisect` ;
+  - **un plan impossible** : retour à `/architect`.
+- Il peut mettre de côté les tentatives à moitié faites et revenir au dernier état qui marchait.
+- Il enregistre les pistes écartées dans `memory.md`, corrige la source d'une prémisse fausse, et propose une leçon si la cause peut se reproduire ailleurs.
 
 ### `tidy` : garder `context/` juste
 
