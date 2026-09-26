@@ -1,17 +1,17 @@
 ---
 name: imprint
-description: Keep a project's UI coherent across many sessions by capturing its real component patterns into context/ui-registry.md, then finding where the codebase has drifted from them. Scans the UI for buttons, spacing, color, typography and other recurring patterns, reconciles them against the registry, updates the registry with the canonical set, and produces a fix list of the inconsistencies — without mass-editing the code. Use after several sessions of UI work, when buttons/spacing/tokens have started to diverge, before a design pass, or whenever the user says "imprint", "capture the design system", or "the UI is drifting".
+description: Keep a project's UI coherent across many sessions by capturing its real component patterns into context/project/ui-registry.md, then finding where the codebase has drifted from them. Scans the UI for buttons, spacing, color, typography and other recurring patterns, reconciles them against the registry, updates the registry with the canonical set, and produces a fix list of the inconsistencies — without mass-editing the code. Use after several sessions of UI work, when buttons/spacing/tokens have started to diverge, before a design pass, or whenever the user says "imprint", "capture the design system", or "the UI is drifting".
 ---
 
 # Imprint
 
 The failure this prevents: you build UI across many sessions, and each session quietly invents its own version of the same thing. By session three the buttons don't match, the spacing is off by a few pixels in half the screens, and the "design system" has accumulated small contradictions nobody decided on. None of it is visible in any single diff — it only shows up when you look at everything at once. This skill is that look.
 
-The goal is not to redesign anything. The goal is to **make the design system explicit and find where the code has wandered from it** — capturing the canonical patterns into `context/ui-registry.md` so future sessions build against a written standard instead of guessing from whatever file they happened to open.
+The goal is not to redesign anything. The goal is to **make the design system explicit and find where the code has wandered from it** — capturing the canonical patterns into `context/project/ui-registry.md` so future sessions build against a written standard instead of guessing from whatever file they happened to open.
 
 There are two outputs, and they're different:
 
-- **The registry** (`context/ui-registry.md`) — this skill *writes*. It is the source of truth for UI patterns, and keeping it current is the whole point.
+- **The registry** (`context/project/ui-registry.md`) — this skill *writes*. It is the source of truth for UI patterns, and keeping it current is the whole point.
 - **The fix list** — this skill *reports*, it does not apply. Like a review, it hands you the inconsistencies and you decide what to change.
 
 ## The rules
@@ -26,7 +26,7 @@ There are two outputs, and they're different:
 
 ### 1. Load the standard, if there is one
 
-Read `context/ui-registry.md` if it exists — that's the baseline to reconcile against. Also read `./context/` more broadly, CLAUDE.md, and any design-token source the project already has: a Tailwind/theme config, a tokens file, a component-library setup, CSS variables. These are stronger evidence of intent than scattered component code.
+Read `context/project/ui-registry.md` if it exists — that's the baseline to reconcile against. If it's still at the old location (`context/ui-registry.md`), move it to `context/project/` first (`git mv` if the repo is tracked) and update any `CLAUDE.md` pointer to it. Also read `./context/` more broadly, CLAUDE.md, and any design-token source the project already has: a Tailwind/theme config, a tokens file, a component-library setup, CSS variables. These are stronger evidence of intent than scattered component code.
 
 If there's no registry yet, this is the **bootstrap run**: there's nothing to reconcile against, so the job is to build the first registry from the codebase. Say so up front — the output will be the new registry plus whatever inconsistencies already exist in it.
 
@@ -60,7 +60,7 @@ Resolve the ambiguous cases with the user before writing anything.
 
 ### 5. Update the registry
 
-Write the reconciled, canonical patterns to `context/ui-registry.md`. Keep it a working reference, not prose: each pattern with its canonical value, its variants, and where the source of truth lives (token name, config file, primitive component). New patterns get added; retired ones get removed only after the user confirms. The registry should be something the *next* session can read and build against without re-deriving any of this.
+Write the reconciled, canonical patterns to `context/project/ui-registry.md`. Keep it a working reference, not prose: each pattern with its canonical value, its variants, and where the source of truth lives (token name, config file, primitive component). New patterns get added; retired ones get removed only after the user confirms. The registry should be something the *next* session can read and build against without re-deriving any of this.
 
 ### 6. Report the fix list
 

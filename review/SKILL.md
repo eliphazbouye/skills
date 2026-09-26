@@ -22,8 +22,8 @@ The goal is not to rewrite the code. The goal is to **find what's wrong and hand
 
 Before reading the code, find the intent to judge it against:
 
-- **The plan.** If there's a plan from the `architect` skill, a ticket, a PR description, or the prompt that kicked off the work, use it. Ask the user for it if it's not obvious — "what was this feature supposed to do?" is a fair opening question.
-- **The architecture.** Read `./context/` if it exists, plus CLAUDE.md and any docs describing module boundaries, layering, or conventions. These define what "respects the architecture" means for this project. If there's no written architecture, infer the boundaries from the surrounding code and say you're doing so.
+- **The plan.** If the feature was planned with the `architect` skill, its folder is `context/features/<slug>/`: read `spec.md` (behavior and acceptance criteria `AC-n`), `use-cases.md` if present, and `build-plan.md` (the steps, and which are ticked as done). Otherwise use a ticket, a PR description, or the prompt that kicked off the work. Ask the user for it if it's not obvious — "what was this feature supposed to do?" is a fair opening question.
+- **The architecture.** Read `context/project/architecture.md` and the ADRs in `context/project/adr/` (or the project's own ADR folder, e.g. `docs/adr/`) — accepted ADRs are binding decisions the code must respect. Also read CLAUDE.md and any docs describing module boundaries, layering, or conventions. These define what "respects the architecture" means for this project. If there's no written architecture, infer the boundaries from the surrounding code and say you're doing so.
 
 If you can't find a plan, don't block — review against the architecture and production-readiness, and note in the report that no plan was available to check against.
 
@@ -41,7 +41,7 @@ Read the changed code in full, and read enough of the surrounding code to unders
 
 Walk the change against each:
 
-- **Matches the plan.** Does the implementation do what it was supposed to? Look for: missing pieces of the plan, scope that quietly grew beyond it, decisions silently made differently than agreed, and stubs/TODOs left where real behavior was expected.
+- **Matches the plan.** Does the implementation do what it was supposed to? Look for: missing pieces of the plan, scope that quietly grew beyond it, decisions silently made differently than agreed (in `spec.md` or an ADR), and stubs/TODOs left where real behavior was expected. When a spec exists, check each acceptance criterion (`AC-n`) and say which are met, unmet, or untested — and flag `build-plan.md` steps ticked as done that the code doesn't actually deliver.
 - **Respects architecture boundaries.** Does it sit in the right layer and talk to its neighbors the right way? Look for: a layer reaching past its boundary (e.g. a controller hitting the DB directly), leaked abstractions, circular or wrong-direction dependencies, business logic in the wrong place, and conventions the rest of the codebase follows but this code breaks.
 - **Production readiness.** Will it survive contact with real traffic and real data? Look for: unhandled errors and swallowed exceptions, missing input validation, race conditions and concurrency hazards, N+1 queries and obvious performance traps, resource leaks, missing-or-misleading logging, secrets in code, auth/authorization gaps, and missing tests for the behavior that matters.
 
