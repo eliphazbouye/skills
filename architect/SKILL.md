@@ -36,8 +36,7 @@ context/
     └── <feature-slug>/
         ├── use-cases.md
         ├── spec.md
-        ├── build-plan.md
-        └── review.md             ← review rounds (written by `review`)
+        └── build-plan.md         ← steps + open review findings (findings written by `review`)
 ```
 
 Templates for every file live in this skill's `templates/` directory. Write generated files in the language the user is speaking with you (or the language of the project's existing docs, if they have one).
@@ -123,7 +122,7 @@ Only after explicit approval, and before writing any code:
 ### 6. Implement, following the plan
 
 - Before writing code, re-read the active lessons in `context/project/lessons.md`; they are mistakes this project already made.
-- Work through `build-plan.md` in order, ticking each step (`- [x]`) as it's done and verified, and keep its `Status:` line current (`in-progress`, then `done`). If the session stops midway, the next one resumes from the first unticked step.
+- Work through `build-plan.md` in order, ticking each step (`- [x]`) as it's done and verified, and keep its `Status:` line current (`in-progress`, then `done` — which requires every step and every 🔴/🟡 item under *Review findings* to be ticked). If the session stops midway, the next one resumes from the first unticked step.
 - **A new material decision appears?** Stop coding, ask via AskUserQuestion (with a recommendation), then record the answer — in `spec.md`, or as a new ADR if significant — and adjust `build-plan.md` before continuing.
 - **The plan turns out wrong** (a step is impossible, a premise was false)? Stop and say so; don't silently reroute.
 

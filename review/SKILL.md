@@ -1,6 +1,6 @@
 ---
 name: review
-description: Review a feature an agent just built before you trust it, using a fresh reviewer subagent that never saw the author's reasoning. Runs the project's tests/typecheck/lint, checks the implementation against the plan (spec, acceptance criteria, ADRs), the architecture boundaries and production-readiness, and reports proven issues grouped by severity (critical / important / minor). Records each round in the feature's review log and turns recurring mistakes into project lessons so future sessions don't repeat them. Never fixes without your choice. Use after an agent finishes a feature, before committing, after fixing review findings ("re-review"), or whenever the user says "review this", "review the feature", or "is this production ready".
+description: Review a feature an agent just built before you trust it, using a fresh reviewer subagent that never saw the author's reasoning. Runs the project's tests/typecheck/lint, checks the implementation against the plan (spec, acceptance criteria, ADRs), the architecture boundaries and production-readiness, and reports proven issues grouped by severity (critical / important / minor). Tracks open findings in the feature's build plan and turns recurring mistakes into project lessons so future sessions don't repeat them. Never fixes without your choice. Use after an agent finishes a feature, before committing, after fixing review findings ("re-review"), or whenever the user says "review this", "review the feature", or "is this production ready".
 ---
 
 # Review
@@ -26,7 +26,7 @@ Locate the intent the code will be judged against — as **file paths**, so the 
 - **The architecture.** `context/project/architecture.md`, the ADRs in `context/project/adr/` (or the project's own ADR folder, e.g. `docs/adr/`), CLAUDE.md, and any docs on boundaries or conventions.
 - **The lessons.** `context/project/lessons.md` if it exists — mistakes this project already made.
 - **The UI registry.** `context/project/ui-registry.md`, if the change touches UI files.
-- **The previous round.** `context/features/<slug>/review.md` if it exists. If it has open findings and the user is asking after fixes, this is a **re-review** (see step 2).
+- **The previous round.** The *Review findings* section of the feature's `build-plan.md`, if it exists. If it has unticked findings and the user is asking after fixes, this is a **re-review** (see step 2).
 
 No plan found? Don't block — the review runs against architecture and production-readiness, and the report says no plan was available.
 
@@ -35,7 +35,7 @@ No plan found? Don't block — the review runs against architecture and producti
 - **Uncommitted work:** `git diff` + `git diff --staged` + `git status`.
 - **Branch or PR:** `git diff <base>...HEAD`.
 - **Specific files** the user points at: those plus what they directly touch.
-- **Re-review:** only what changed since the last round (from the base/HEAD recorded in `review.md`), plus the locations of its open findings — the reviewer checks each open finding is resolved and that the fixes didn't introduce new problems.
+- **Re-review:** only what changed since the last round (from the base/HEAD recorded under *Review findings* in `build-plan.md`), plus the locations of its unticked findings — the reviewer checks each open finding is resolved and that the fixes didn't introduce new problems.
 
 Pin it down as something the reviewer can reproduce — exact git command(s) plus the list of changed files — and check the size with `git diff --stat`.
 
@@ -48,7 +48,7 @@ Launch the review with the Agent tool, `general-purpose` subagent (it must read 
 - Change: <git command(s)>; files: <list>
 - Intent: <paths — spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md> | <user request, quoted verbatim> | no plan available
 - Scope: <all changed files | this slice: …>
-- Re-review of: <review.md path, open finding IDs to verify> (only for a re-review)
+- Re-review of: <build-plan.md path, unticked finding IDs to verify> (only for a re-review)
 - Language: write the report in <the user's language>.
 ```
 
@@ -68,7 +68,13 @@ Merge the reviewers' reports into one: deduplicate the same issue found in two s
 
 ### 5. Record the round
 
-- **Feature log.** If the feature has a folder in `context/features/<slug>/`, append this round to its `review.md` (create it from `templates/review.md`): scope with base/HEAD commits, checks, acceptance criteria, verdict, and the findings table. On a re-review, update the status of earlier findings (`fixed (round N)`, `won't fix`, `disputed`) — never delete them. No feature folder → the report stays in the chat only.
+- **Open findings in the build plan.** If the feature has a folder in `context/features/<slug>/`, update the *Review findings* section of its `build-plan.md` — no separate review log; the full report lives in the chat, and what generalizes goes to `lessons.md`:
+  - the header line: date, base and HEAD commits (+ whether uncommitted changes were included), verdict;
+  - one checkbox per 🔴/🟡/⚪ finding: `` - [ ] **R<round>-<n>** <sev> <short title> — `file:line` ``;
+  - on a re-review: tick fixed items (`(fixed, round N)`), strike through won't-fix items with the reason, mark disputed ones, and add the new round's findings. Remove items ticked in an earlier round, so the section only holds what's open or just resolved.
+  - If any 🔴/🟡 box is unticked, set the plan's `Status:` back to `in-progress`.
+
+  No feature folder → the report stays in the chat only.
 - **Plan gaps.** For each plan gap, the fix is either in the code or in the plan. Say which you recommend, and if it's the plan — a missing decision, or a deliberate departure from an ADR — suggest `/architect` to record it (a new ADR superseding the old one). Never leave an ADR contradicted silently.
 
 ### 6. Learn, then hand the decision back
@@ -82,7 +88,7 @@ Then ask with **one AskUserQuestion call** holding two questions:
 
 Then:
 
-- **Write the chosen lessons** to `context/project/lessons.md` (create it from `templates/lessons.md`): a new `L-NNN` entry, stated as an instruction, with why and where it was seen. A recurred lesson gets a new line under **Seen** instead of a duplicate entry. Note the lesson IDs in the round's `review.md` section.
+- **Write the chosen lessons** to `context/project/lessons.md` (create it from `templates/lessons.md`): a new `L-NNN` entry, stated as an instruction, with why and where it was seen. A recurred lesson gets a new line under **Seen** instead of a duplicate entry. Add the lesson IDs to the plan's `Lessons applied` line so later rounds know they're covered.
 - **Escalate what keeps coming back.** A lesson seen **3 times or more**, or born from a 🔴, is a sign that written advice isn't enough: propose making it automatic — a lint rule, a test, a type constraint — or at least a rule in `CLAUDE.md`. Once it's enforced, move it to the **Enforced** section: agents no longer need to remember it.
 - **Fix only what was picked.** Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
 
