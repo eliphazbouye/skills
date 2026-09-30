@@ -1,6 +1,6 @@
 ---
 name: tidy
-description: Audit the project's context/ folder so it keeps telling the truth. Finds broken references (UC/AC/ADR/L ids that don't exist), ADR numbering problems, accepted ADRs the code no longer follows, stale or inconsistent build plans, lessons that are duplicated, already enforced or overdue for escalation, an oversized or stale memory.md, and CLAUDE.md commands that no longer exist. Reports a fix list grouped by file, applies only the fixes the user picks, and routes the rest to the skill that owns it. Never changes the code. Use every few weeks, before a large feature, when agents seem to follow outdated guidance, or whenever the user says "tidy", "clean up the context", "range le contexte", "is the context up to date", or "audit context".
+description: Audit the project's context/ folder so it keeps telling the truth. Finds broken references (UC/AC/ADR/L ids that don't exist), ADR numbering problems, accepted ADRs the code no longer follows, stale or inconsistent build plans, briefs with overdue deferred items or a spec that drifted past their out-of-scope, lessons that are duplicated, already enforced or overdue for escalation, an oversized or stale memory.md, and CLAUDE.md commands that no longer exist. Reports a fix list grouped by file, applies only the fixes the user picks, and routes the rest to the skill that owns it. Never changes the code. Use every few weeks, before a large feature, when agents seem to follow outdated guidance, or whenever the user says "tidy", "clean up the context", "range le contexte", "is the context up to date", or "audit context".
 ---
 
 # Tidy
@@ -14,7 +14,7 @@ The goal is not to rewrite the documentation. The goal is **a context/ folder th
 1. **Report, then apply only what's picked.** Findings are a fix list. Mechanical fixes (a status line, a broken link, moving a lesson to *Enforced*) are applied only after the user picks them; anything that's a real decision is routed, not decided.
 2. **Accepted ADRs are never edited.** An ADR the code no longer follows is either code drift (a fix list for the code) or an outdated decision (a new ADR that supersedes it, via `/architect`). Only an ADR's *Status* line ever changes.
 3. **Never touch the code.** Code that breaks the context is reported with `file:line`; fixing it is `/build`'s job.
-4. **Route to the owner.** Each file has a skill that owns it — architecture drift goes to `/map`, decisions to `/architect`, session state to `/remember`, UI patterns to `/imprint`. This skill finds problems across all of them; it doesn't take over their judgment.
+4. **Route to the owner.** Each file has a skill that owns it — briefs go to `/scope`, architecture drift goes to `/map`, decisions to `/architect`, session state to `/remember`, UI patterns to `/imprint`. This skill finds problems across all of them; it doesn't take over their judgment.
 
 ## Process
 
@@ -37,10 +37,28 @@ List everything under `context/`, plus `CLAUDE.md`, `CLAUDE.local.md`, and the A
 - Broader drift between `architecture.md` and the code is `/map`'s job (re-map) — suggest it rather than redoing it.
 
 **Features**
-- Every step ticked but `Status:` not `done`, or `done` with unticked steps or unticked 🔴/🟡 review findings.
+- Every step ticked but `Status:` not `done`, or `done` with unticked steps or open (`[ ]` or `[~]`) 🔴/🟡 review findings.
 - `in-progress` plans with no recent activity: compare `Updated:` and `git log` on the files the plan touches. Stale → abandoned, blocked, or finished without updating?
-- `done` plans with a `PR:` link — is the PR merged? (`gh pr view`, if available.)
+- `done` plans with a `PR:` link — is the PR merged? (`gh pr view`, if available.) Merged but not `shipped` → route to `/land` to close the feature out.
+- *Acceptance run* stale (the code differs from its recorded HEAD, outside `context/`) on a plan about to ship; open `V` findings; `manual — pending` items.
+- `shipped` plans whose *Follow-up* success check date has passed — was it checked?
 - Specs whose acceptance criteria no plan step cites.
+
+**Worktrees and branches** (`git worktree list`, `feat/*` / `fix/*` branches)
+- Worktrees whose branch is merged (or gone) — candidates for removal via `../feature/worktrees.md` → *Removing* (routed: `/land` or `/endurance`).
+- Prunable worktrees (`git worktree prune --dry-run`), branches with no worktree and no activity for weeks.
+- A `## Worktrees` recipe in CLAUDE.md whose files or commands no longer exist.
+- The shared state (`wt.py ports`, `wt.py mail list`): ports still assigned to features that are gone (`wt.py ports release <slug>`), messages about features long merged.
+
+**Fix records** (`context/fixes/*.md`, written by `fix`)
+- Same status checks as build plans: `done` with open findings, a `PR:` merged but not `shipped`, records `in-progress` with no recent activity.
+
+**Briefs** (`brief.md`, written by `scope`)
+- Briefs still `Status: draft` with no recent activity — an interview left unfinished: resume with `/scope` or drop it?
+- *Deferred* items whose *needed by* date or step has passed and are still unanswered.
+- Assumptions still *unverified* or *needs spike* while the feature is already being built.
+- A spec, acceptance criterion or build step that covers something the brief marks **Out** — either the scope changed (update the brief, via `/scope`) or the plan drifted (via `/architect`).
+- A final brief with no spec or plan for a long time — still wanted?
 
 **Lessons** (`lessons.md`)
 - Duplicate or overlapping lessons.

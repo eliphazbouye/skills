@@ -8,17 +8,24 @@
 context/
 ├── README.md              ← this file
 ├── project/               ← what holds for the whole project
+│   ├── brief.md           ← what & why of the whole project, if scoped (skill: scope)
 │   ├── architecture.md    ← modules, layers, boundaries, key dependencies (skills: architect, map)
 │   ├── memory.md          ← session memory (skill: remember)
 │   ├── ui-registry.md     ← canonical UI patterns (skill: imprint)
 │   ├── lessons.md         ← recurring mistakes found in reviews (skill: review)
 │   └── adr/               ← one file per significant decision (skill: architect)
+├── fixes/                 ← one record per bug fix, playing the build plan's role (skill: fix)
 └── features/              ← one folder per feature (skill: architect)
     └── <feature-slug>/
+        ├── brief.md       ← what & why, settled by interview (skill: scope)
         ├── use-cases.md   ← who does what, in which scenario
         ├── spec.md        ← what it must do + acceptance criteria
         └── build-plan.md  ← how it's built, step by step, with status, open review findings and PR link (skills: build, review, ship)
 ```
+
+## Parallel work
+
+Each feature lives on its own branch (`feat/<slug>`, `fix/<slug>`) in its own git worktree, so its files here are committed on that branch. The base branch's `context/features/` holds what has merged; features in flight are found with `git worktree list`. See the `feature` skill's `worktrees.md`.
 
 ## Rules
 

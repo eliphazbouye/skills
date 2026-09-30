@@ -1,6 +1,6 @@
 ---
 name: remember
-description: Carry a project's working state across sessions. At the end of a session (save mode), it files what happened into the right place in context/ — ticks finished build-plan steps, adds new conventions to architecture.md, flags decisions that need an ADR — and keeps context/project/memory.md for the rest: where to resume, git state, dead ends, small decisions. At the start of a session (resume mode), it reads it all back and briefs you on where things stand and the next action. Use when the user says "remember this", "let's wrap up", "save where we are", "on s'arrête là", before stopping work you'll resume later — or, to resume, "where were we", "resume", "où on en était", "reprends".
+description: Carry a project's working state across sessions. At the end of a session (save mode), it files what happened into the right place in context/ — ticks finished build-plan steps, adds new conventions to architecture.md, flags decisions that need an ADR — and keeps context/project/memory.md for the rest: where to resume, git state, dead ends, small decisions. At the start of a session (resume mode), it reads it all back and briefs you on where things stand and the next action, handing off to the interrupted skill (a `scope` interview, a `build`). Use when the user says "remember this", "let's wrap up", "save where we are", "on s'arrête là", before stopping work you'll resume later — or, to resume, "where were we", "resume", "où on en était", "reprends".
 ---
 
 # Remember
@@ -22,6 +22,7 @@ If it's unclear which one the user means, it's save when there's session work to
 
 | Fact from the session | Goes to | Who writes it |
 |---|---|---|
+| An interrupted `scope` interview | the draft brief's *Ledger* (`context/features/<slug>/brief.md` or `context/project/brief.md`) — check it reflects the last answers; *Resume here* just points to it | `scope` writes it as it goes; this skill checks it |
 | Progress on a planned feature | tick the steps in `context/features/<slug>/build-plan.md` | this skill (after checking the code) |
 | A new project-wide convention ("handlers return Result, never throw") | *Conventions* in `context/project/architecture.md` | this skill, with the user's OK |
 | A new UI pattern | `context/project/ui-registry.md` | suggest `/imprint` |
@@ -29,7 +30,8 @@ If it's unclear which one the user means, it's save when there's session work to
 | A decision specific to one feature | that feature's `spec.md` (*Decisions*) | this skill, with the user's OK |
 | A mistake found in a review | `context/project/lessons.md` | `review` — not this skill |
 | A personal preference of the user ("reply in French", "small commits") | `CLAUDE.local.md` (not committed) | this skill, with the user's OK |
-| Where to resume, git state, blockers | *Resume here* in `memory.md` | this skill |
+| Where to resume, git state, blockers — in a feature's worktree | *Resume here* in that feature's `build-plan.md` (or its brief, before a plan exists) | this skill |
+| Where to resume, git state, blockers — in the main worktree | *Resume here* in `memory.md` | this skill |
 | An approach tried and ruled out | *Dead ends* in `memory.md` | this skill |
 | A small project decision with no better home | *Small decisions* in `memory.md` | this skill |
 | A rule for everyone on this project | *Project constraints* in `memory.md` | this skill |
@@ -48,7 +50,7 @@ Look hard for **dead ends** — approaches tried and abandoned, with the reason.
 
 ### S2. Establish the ground truth
 
-- Run `git status`, `git log origin/<branch>..HEAD` (unpushed commits) and note the current branch.
+- Run `git status` and note the current branch; unpushed commits: `git log @{u}..HEAD` if the branch has an upstream, otherwise all commits since `origin/<base>` are unpushed.
 - For each build-plan step the session worked on, check in the code that it's really done before ticking it.
 
 ### S3. Reconcile with what's already written
@@ -90,7 +92,9 @@ End with one line: what was saved where, and the next action recorded in *Resume
 
 ### R1. Read the state
 
-- `context/project/memory.md` — *Resume here* first, then *Dead ends*.
+- In a feature's worktree (`git worktree list`, the branch is `feat/*` or `fix/*`): that feature's *Resume here* in its build plan first. Otherwise `context/project/memory.md` — *Resume here* first. Then *Dead ends*.
+- Other features in flight in other worktrees: one line each, and suggest `/endurance` if there are several.
+- Any brief still in `Status: draft` (`context/features/*/brief.md`, `context/project/brief.md`): an interrupted `scope` interview — its open high-impact ledger entries.
 - The build plan of the feature in progress: first unticked step, and unticked items under *Review findings*.
 - `git status`, the current branch, unpushed commits — and compare with what *Resume here* says. If they disagree (other commits landed, the branch changed, the uncommitted work is gone), that's the first thing to report.
 - The active entries of `context/project/lessons.md` that apply to the next step.
@@ -107,7 +111,7 @@ Five lines at most:
 
 ### R3. Hand over
 
-Ask with AskUserQuestion: "Continue with <next action> (Recommended)" — through `/build` when it's a build-plan step or an open review finding — / "Work on something else" / "Review first (`/review`)" — adapt the options to the state (e.g. recommend `/review` when a feature's steps are all ticked but it was never reviewed, and `/ship` when it's `done`, reviewed and has no `PR:` yet). Don't start working before the user picks.
+Ask with AskUserQuestion: "Continue with <next action> (Recommended)" — through `/build` when it's a build-plan step or an open review finding — / "Work on something else" / "Review first (`/review`)" — adapt the options to the state (e.g. `/feature <slug>` routes any feature to its next stage; otherwise recommend resuming `/scope` when a brief is still a draft, `/architect` when a brief is final but the feature has no build plan yet, `/verify` when it's reviewed but not checked in the running app, `/land` when its PR is open, recommend `/review` when a feature's steps are all ticked but it was never reviewed, and `/ship` when it's `done`, reviewed and has no `PR:` yet). Don't start working before the user picks.
 
 ## The bar
 

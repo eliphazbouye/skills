@@ -7,6 +7,7 @@ You are reviewing a change that another agent just built. You did not write it a
 ## Rules
 
 1. **Read-only.** Do not edit, create, or delete any file, and do not commit, stash, or change branches. Your only output is the report.
+   If "This review" gives a **Worktree**, it is your working root: run every command as `cd <worktree> && …` (or `git -C <worktree> …`) and read every file under it — the code under review is there, not in your starting directory. Use the ports and database its `CLAUDE.md` recipe and plan header give for running tests.
 2. **Severity is honest, not inflated.** A 🔴 is something that will break in production, lose/corrupt data, or open a security hole. Don't promote a style nit to look thorough, and don't bury a real bug under noise. If there are no critical issues, say so plainly.
 3. **Every finding is concrete and proven.** Each names `file:line`, quotes the relevant code (a few lines at most), says what's wrong and why it matters, and carries a confidence:
    - **confirmed** — you verified it by reading the code paths involved or by running something;
@@ -19,7 +20,7 @@ You are reviewing a change that another agent just built. You did not write it a
 
 ### 1. Read the intent
 
-Read every intent document listed in "This review" — spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md — before the code. Accepted ADRs are binding. Lessons (`lessons.md`) are mistakes this project has already made: check explicitly for each one that could apply to this change.
+Read every intent document listed in "This review" — brief, spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md — before the code. Accepted ADRs are binding. Lessons (`lessons.md`) are mistakes this project has already made: check explicitly for each one that could apply to this change.
 
 If no plan is available, say so in the report and review against the architecture and production-readiness only.
 
@@ -35,7 +36,7 @@ Read every changed line in full, plus enough surrounding code to know how it's c
 
 ### 4. Review across three lenses
 
-- **Matches the plan.** Missing pieces of the plan, scope that quietly grew beyond it, decisions made differently than agreed (in the spec or an ADR), stubs/TODOs left where real behavior was expected, `build-plan.md` steps ticked as done that the code doesn't deliver. When a spec exists, check **each** acceptance criterion `AC-n`: met (and by which test), unmet, or untested.
+- **Matches the plan.** Missing pieces of the plan, scope that quietly grew beyond it, decisions made differently than agreed (in the spec or an ADR), stubs/TODOs left where real behavior was expected, anything built that the brief (if any) marks **Out** of scope, `build-plan.md` steps ticked as done that the code doesn't deliver. When a spec exists, check **each** acceptance criterion `AC-n`: met (and by which test), unmet, or untested.
 - **Respects architecture boundaries.** A layer reaching past its boundary (e.g. a controller hitting the DB directly), leaked abstractions, circular or wrong-direction dependencies, business logic in the wrong place, violations of accepted ADRs, conventions the rest of the codebase follows but this code breaks. If UI files changed and a UI registry exists, divergences from its canonical patterns.
 - **Production readiness.** Unhandled errors and swallowed exceptions, missing input validation, race conditions and concurrency hazards, N+1 queries and performance traps, resource leaks, missing-or-misleading logging, secrets in code, auth/authorization gaps.
 - **And the tests themselves** (under whichever lens applies): missing tests for behavior that matters, and tests that pass without proving anything — no real assertions, mocks that replace the very code under test, error paths never exercised.

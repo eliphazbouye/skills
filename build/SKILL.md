@@ -21,9 +21,9 @@ The goal is not to write code fast. The goal is **code that does what the spec s
 
 ### 1. Find the plan
 
-- If the user names a feature, use `context/features/<slug>/build-plan.md`.
+- If the user names a feature, use `context/features/<slug>/build-plan.md`. Findings on a fix live in its fix record (`context/fixes/<slug>.md`, written by `fix`): it plays the role of the plan — fix its open *Review findings* the same way.
 - Otherwise look for plans with `Status: in-progress` (and check *Resume here* in `context/project/memory.md`). One → use it. Several → ask which with AskUserQuestion. None → list the `draft` plans and ask.
-- **No plan at all?** For a trivial change, just do it — this skill isn't needed. For anything with open decisions, suggest `/architect` first rather than building on guesses.
+- **No plan at all?** A bug in existing behavior → follow `/fix` instead. For a trivial change, just do it — this skill isn't needed. For anything with open decisions, suggest `/architect` first rather than building on guesses.
 
 ### 2. Load the context
 
@@ -39,6 +39,7 @@ Read, before touching code:
 ### 3. Prepare the ground
 
 - **Git state.** Run `git status` and note the branch. Uncommitted changes that aren't part of this plan → ask what to do with them before starting. On the default branch → ask with AskUserQuestion: "Create branch `feat/<slug>` (Recommended)" / "Stay on <branch>".
+- **Under `feature` or `endurance`** (the pipeline is driving): don't ask these two — you're already on the feature's branch in its worktree (if you're on the default branch, stop: the worktree step was skipped); commit after each verified step, unless CLAUDE.md or memory says otherwise; say so in one line.
 - **Commit policy** — ask once, unless CLAUDE.md or memory already answers it: "Commit after each verified step (Recommended)" / "One commit at the end" / "I'll commit myself". Per-step commits make the history match the plan and give `review` a clean base.
 - **Baseline.** Run the test suite (and typecheck/lint if cheap) before changing anything, and note what already fails. Those failures are not yours — don't fix them silently, and don't let them hide new ones.
 - **No test setup in the project?** Ask: "Set up a minimal test harness first (Recommended)" / "Verify steps manually" — and if manual, each *verify* is a concrete command or check you run and report.
@@ -46,7 +47,7 @@ Read, before touching code:
 
 ### 4. Execute, one step at a time
 
-**Order:** unticked 🔴/🟡 items under *Review findings* first (they're about code that already exists), then the first unticked step, in order.
+**Order:** open (`[ ]`) 🔴/🟡 items under *Review findings* first (they're about code that already exists), then the first unticked step, in order.
 
 For each step:
 
@@ -54,12 +55,13 @@ For each step:
 2. **Test first** (rule 2) — for a review finding, a regression test that reproduces it. Run it; confirm it fails, and fails because the behavior is missing, not because of a typo or setup error.
 3. **Implement** the smallest change that makes it pass, following the conventions of the surrounding code.
 4. **Verify** — run the step's *verify* check, the new test, and the tests around the code you touched. Compare against the baseline: anything newly failing is yours to fix now.
-5. **Tick** the step (`- [x]`) — for a review finding, add `(fixed, round N)`. Update `Updated:`.
+5. **Tick** the step (`- [x]`). A review finding is **not** ticked by you — you're its author: mark it `- [~]` with the fix commit (`(fix: <sha>)`), and add `file:line` if it had none (a `V` finding from `verify` cites a scenario). `review` confirms `R` items and `verify` confirms `V` items. Update `Updated:`.
 6. **Commit**, if that's the policy, with a message naming the step (`S3: …`) or finding (`R1-2: …`).
 
 **When something doesn't fit the plan, stop the loop:**
 
 - **Unmade decision** (rule 4) → ask, then record the answer: in the feature's `spec.md` (*Decisions*, and a line in *Revisions*), or — if it's hard to reverse, cross-cutting, or sets a convention — as a new ADR in `context/project/adr/` from `architect`'s `templates/adr.md`, next number, citing this feature. Then continue.
+- **A step, or the whole plan, is ticked but `Status:` wasn't set to `done`** (a session stopped before step 5) → run step 5 now.
 - **The plan is wrong** — a step is impossible, a premise was false, a step is missing → explain what you found, propose the amendment (added, changed or reordered steps), and ask: "Amend the plan as proposed (Recommended)" / "Change the approach" / "Stop here". Edit `build-plan.md` only after approval. If the change touches the spec's behavior or an ADR, suggest `/architect` instead.
 - **A check keeps failing** after two honest attempts at the same step → stop guessing; suggest `/recover` and leave the step unticked.
 
@@ -79,6 +81,6 @@ Report briefly: what was built, the AC → test mapping, decisions made during t
 - "Commit and push" (if not already done per the policy);
 - "Stop here" — and suggest `/remember` so the next session resumes cleanly.
 
-After fixing review findings, recommend a re-review instead: "Re-review the fixes (Recommended)".
+After fixing review findings — `R` from a review or `V` from an acceptance run — recommend a re-review instead: "Re-review the fixes (Recommended)"; after it, `/verify` runs again for `V` findings.
 
 **Stopping mid-way** is fine — the ticked steps are the state. Just make sure every ticked step is really done, the unticked ones aren't half-written without a note, and suggest `/remember`.

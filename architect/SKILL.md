@@ -1,6 +1,6 @@
 ---
 name: architect
-description: Run the architecture conversation that should happen before building any serious feature. Reads the project's context/ folder (initializing its standard structure on a new project), surfaces the decisions that haven't been made yet (auth, data model, error handling, boundaries…), asks focused questions ONE AT A TIME with a recommended option, presents a plan for approval, then writes the feature's use cases, spec, build plan and ADRs into context/ and hands off to the `build` skill. Use before implementing a non-trivial feature, when a task has unstated design decisions, or whenever the user says "architect", "plan this feature", "let's design X before building", "conçois", "planifie cette feature", or "réfléchissons à l'archi avant de coder".
+description: Bare feature names or new-project requests with no brief in context/ → use `scope` first. Run the architecture conversation that should happen before building any serious feature. Reads the project's context/ folder (initializing its standard structure on a new project), surfaces the decisions that haven't been made yet (auth, data model, error handling, boundaries…), asks focused questions ONE AT A TIME with a recommended option, presents a plan for approval, then writes the feature's use cases, spec, build plan and ADRs into context/ and hands off to the `build` skill. Use once the need is known (a brief exists in context/, or the user states what to build and for whom) and HOW to build it is open — before implementing a non-trivial feature, when a task has unstated design decisions, or whenever the user says "architect", "plan this feature", "choisir entre X et Y pour la feature", "let's design X before building", "conçois", "planifie cette feature", or "réfléchissons à l'archi avant de coder".
 ---
 
 # Architect
@@ -34,10 +34,13 @@ context/
 │       └── 0001-<decision>.md    ← one file per significant decision
 └── features/                     ← one folder per feature, stable name, no date
     └── <feature-slug>/
+        ├── brief.md              ← what & why, from the interview (written by `scope`)
         ├── use-cases.md
         ├── spec.md
         └── build-plan.md         ← steps + open review findings (findings written by `review`)
 ```
+
+A whole-project brief, when one exists, lives at `context/project/brief.md` (also written by `scope`).
 
 Templates for every file live in this skill's `templates/` directory. Write generated files in the language the user is speaking with you (or the language of the project's existing docs, if they have one).
 
@@ -48,6 +51,7 @@ Templates for every file live in this skill's `templates/` directory. Write gene
 Check `context/` before anything else:
 
 - **No `context/`, but the repo already has substantial code:** the architecture should be mapped from the code before planning on top of it. Ask with AskUserQuestion: "Map the codebase first with `/map` (Recommended)" / "Minimal init and continue". On the first, follow the `map` skill, then come back to this feature.
+- **`context/` exists but has no `context/project/architecture.md`** (typically after `scope` created only the brief): treat it like a missing `context/` — `/map` first if the repo has substantial code, otherwise initialize whatever is missing, keeping the brief.
 - **No `context/` (new project):** create `context/README.md` (from `templates/context-readme.md`), `context/project/architecture.md` (from `templates/architecture.md`, filled with what the repo actually shows — or, on an empty repo, with what this conversation establishes), and the empty `context/project/adr/` and `context/features/` folders (with a `.gitkeep` each). Then make sure the project's `CLAUDE.md` (create it if missing) contains the pointer from `templates/context-readme.md`'s "CLAUDE.md pointer" section. Tell the user in one line what you created.
 - **Old flat layout:** if `context/memory.md` or `context/ui-registry.md` exist at the root, move them into `context/project/` (use `git mv` if the repo is tracked), update any `CLAUDE.md` line pointing to the old path, and create whatever else is missing from the structure above. Tell the user what moved.
 - **Project already keeps ADRs elsewhere** (e.g. `docs/adr/`, `doc/architecture/decisions/`): keep using that folder and its numbering/format instead of `context/project/adr/`, and note its location in `context/README.md`.
@@ -57,7 +61,7 @@ Check `context/` before anything else:
 Read, in this order:
 
 1. `context/README.md`, then everything in `context/project/` — `architecture.md`, `memory.md`, `ui-registry.md`, `lessons.md`, and every ADR (at least the title and status of each; read in full the ones related to this feature).
-2. `context/features/` — list the folders. **If the request extends or changes an existing feature, work in its folder** and read its three files; don't create a second folder for the same feature.
+2. `context/features/` — list the folders. **If the request extends or changes an existing feature, work in its folder** and read its files; don't create a second folder for the same feature. **If the folder has a `brief.md`** (or the project has `context/project/brief.md`), treat it as settled ground: its answers, scope and constraints are decided — don't re-ask them. If it's still `Status: draft`, the interview was interrupted: offer to finish it with `/scope` first. Its *unverified* assumptions are risks to design around (or to confirm before building); its *needs spike* ones are candidates for `/spike`; its scenarios become the use cases, its deferred items become open questions, and its *Hints for architect* seed the decisions to surface.
 3. `./docs/` if it exists, plus `CLAUDE.md` and the README.
 4. The existing code this feature will touch, so questions and recommendations are grounded in what's actually there.
 
@@ -77,9 +81,11 @@ From the request + context, build a private list of the decisions this feature r
 - **Non-functional** — performance, scale, security, observability.
 - **Testing & rollout** — how is correctness verified? Feature flag? Migration/backfill path?
 
+**If the *what* itself is fuzzy** — no brief, and you can't state the problem, the users, the main scenario or the boundaries without guessing — don't design on top of it. Ask with AskUserQuestion: "Clarify the need first with `/scope` (Recommended)" / "Continue — the need is clear enough". On the first, follow the `scope` skill, then come back here with its brief.
+
 Then size it:
 
-- **Trivial** (a fix, a rename, no open decision): say so in one line, and ask via AskUserQuestion whether to skip straight to implementation (recommended) or plan anyway. No files are written for a trivial task.
+- **Trivial** (a fix, a rename, no open decision): say so in one line, and ask via AskUserQuestion whether to skip straight to implementation (recommended) or plan anyway. No files are written for a trivial task — except when the `feature` pipeline is driving: then write a Small `build-plan.md` anyway, so the pipeline knows the stage is done.
 - **Small** (one scenario, no significant decision): `build-plan.md` only, with a short "Spec" section inside it.
 - **Medium**: `spec.md` (use cases written inline) + `build-plan.md`.
 - **Large** (several actors or flows, cross-cutting decisions): `use-cases.md` + `spec.md` + `build-plan.md`.
@@ -118,6 +124,8 @@ Only after explicit approval, and before writing any code:
 - **`context/features/<slug>/`** — write `use-cases.md`, `spec.md`, `build-plan.md` from the templates, per the sizing. The slug is short kebab-case, no date (`auth-login`, `export-pdf`). If the folder already exists, update the files in place and add a line to the spec's *Revisions* section.
 - **ADRs** — a decision gets an ADR when it is hard to reverse, cross-cutting, or sets a convention other features will follow (auth scheme, database, API error format, a new core dependency). Feature-local choices (a field name, a local UI choice) stay in `spec.md`. Number ADRs sequentially after the highest existing one (`0001`, `0002`…), from `templates/adr.md`. When a decision replaces an older ADR, set the old one's status to `Superseded by ADR-NNNN` — never delete or rewrite its body.
 - **`context/project/architecture.md`** — update only if the feature adds or changes a module, a layer boundary, an external service, or a core dependency.
+
+Under `feature` or `endurance` (you're in the feature's worktree), commit what you wrote on its own (`chore(context): plan for <slug>`) — ADRs and `architecture.md` changes included — so endurance's conflict check sees them. Fill the plan header's `Branch`, `Worktree` and `Ports` from the worktree.
 
 **One source per fact.** Files reference each other instead of copying: the spec cites `UC-n` and `ADR-NNNN`, the build plan cites `AC-n`. Something that changes should only need editing in one place.
 

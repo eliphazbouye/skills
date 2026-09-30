@@ -22,11 +22,12 @@ The failure this prevents: an agent builds a feature — say 400 lines — you s
 
 Locate the intent the code will be judged against — as **file paths**, so the reviewer reads the source, not your summary of it:
 
-- **The plan.** If the feature was planned with the `architect` skill, its folder is `context/features/<slug>/`: `spec.md` (behavior and acceptance criteria `AC-n`), `use-cases.md` if present, `build-plan.md` (the steps, and which are ticked). Otherwise a ticket, a PR description, or the request that kicked off the work — if that request is only in this conversation, quote it verbatim; don't paraphrase. If nothing is obvious, ask the user: "what was this feature supposed to do?"
+- **The plan.** If the feature was planned with the `architect` skill, its folder is `context/features/<slug>/`: `brief.md` if present (written by `scope` — the need, the scenarios, and what's explicitly **out of scope**), `spec.md` (behavior and acceptance criteria `AC-n`), `use-cases.md` if present, `build-plan.md` (the steps, and which are ticked). Otherwise a ticket, a PR description, or the request that kicked off the work — if that request is only in this conversation, quote it verbatim; don't paraphrase. If nothing is obvious, ask the user: "what was this feature supposed to do?"
 - **The architecture.** `context/project/architecture.md`, the ADRs in `context/project/adr/` (or the project's own ADR folder, e.g. `docs/adr/`), CLAUDE.md, and any docs on boundaries or conventions.
 - **The lessons.** `context/project/lessons.md` if it exists — mistakes this project already made.
 - **The UI registry.** `context/project/ui-registry.md`, if the change touches UI files.
-- **The previous round.** The *Review findings* section of the feature's `build-plan.md`, if it exists. If it has unticked findings and the user is asking after fixes, this is a **re-review** (see step 2).
+- **The previous round.** The *Review findings* section of the feature's `build-plan.md`, if it exists. If it has a *Last review* header, this is a **re-review** (see step 2): the `[~]` R items are the fixes to confirm.
+- **A fix** (from `fix`): its record `context/fixes/<slug>.md` is the intent (report, cause, regression test) *and* plays the role of the build plan below. Never write findings about a fix into a feature's folder — above all not a `shipped` one.
 
 No plan found? Don't block — the review runs against architecture and production-readiness, and the report says no plan was available.
 
@@ -35,9 +36,9 @@ No plan found? Don't block — the review runs against architecture and producti
 - **Uncommitted work:** `git diff` + `git diff --staged` + `git status`.
 - **Branch or PR:** `git diff <base>...HEAD`.
 - **Specific files** the user points at: those plus what they directly touch.
-- **Re-review:** only what changed since the last round (from the base/HEAD recorded under *Review findings* in `build-plan.md`), plus the locations of its unticked findings — the reviewer checks each open finding is resolved and that the fixes didn't introduce new problems.
+- **Re-review:** only what changed since the last round (from the base/HEAD recorded under *Review findings* in `build-plan.md`), plus the locations of its `[~]` and `[ ]` findings — the reviewer checks each one is resolved and that the fixes didn't introduce new problems.
 
-Pin it down as something the reviewer can reproduce — exact git command(s) plus the list of changed files — and check the size with `git diff --stat`.
+Under `feature` or `endurance`, the change lives in the feature's worktree: run these commands there (`git -C <worktree> …`, against `origin/<base>` after a `git fetch`) and pass the worktree to the reviewer. Pin it down as something the reviewer can reproduce — exact git command(s) plus the list of changed files — and check the size with `git diff --stat`.
 
 ### 3. Hand off to the reviewer subagent(s)
 
@@ -45,8 +46,9 @@ Launch the review with the Agent tool, `general-purpose` subagent (it must read 
 
 ```
 ## This review
-- Change: <git command(s)>; files: <list>
-- Intent: <paths — spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md> | <user request, quoted verbatim> | no plan available
+- Worktree: <absolute path of the feature's worktree> — cd into it for every command; read files under it (omit when reviewing the current directory)
+- Change: <git command(s), as `git -C <worktree> diff origin/<base>...HEAD` when a worktree is given>; files: <list>
+- Intent: <paths — brief, spec, use cases, build plan, ADRs, architecture, lessons, UI registry, CLAUDE.md> | <user request, quoted verbatim> | no plan available
 - Scope: <all changed files | this slice: …>
 - Re-review of: <build-plan.md path, unticked finding IDs to verify> (only for a re-review)
 - Language: write the report in <the user's language>.
@@ -69,10 +71,11 @@ Merge the reviewers' reports into one: deduplicate the same issue found in two s
 ### 5. Record the round
 
 - **Open findings in the build plan.** If the feature has a folder in `context/features/<slug>/`, update the *Review findings* section of its `build-plan.md` — no separate review log; the full report lives in the chat, and what generalizes goes to `lessons.md`:
-  - the header line: date, base and HEAD commits (+ whether uncommitted changes were included), verdict;
+  - the header line: the round number (previous + 1), date, base and HEAD commits (+ whether uncommitted changes were included), verdict;
   - one checkbox per 🔴/🟡/⚪ finding: `` - [ ] **R<round>-<n>** <sev> <short title> — `file:line` ``;
-  - on a re-review: tick fixed items (`(fixed, round N)`), strike through won't-fix items with the reason, mark disputed ones, and add the new round's findings. Remove items ticked in an earlier round, so the section only holds what's open or just resolved.
-  - If any 🔴/🟡 box is unticked, set the plan's `Status:` back to `in-progress`.
+  - on a re-review: confirm the `[~]` R items the reviewer found resolved (`[x]` + `(fixed, round N)`), reopen the others (`[ ]`, with the reviewer's reason); leave `[~]` V items to `verify`; strike through won't-fix items with the reason, mark disputed ones, and add the new round's findings. Remove items confirmed `[x]` in an earlier round, so the section only holds what's open or just resolved.
+  - If any 🔴/🟡 item is open (`[ ]` or `[~]`), set the plan's `Status:` back to `in-progress`.
+  - Commit the context/ change on its own (`chore(context): review round N of <slug>`), so the record travels with the branch.
 
   No feature folder → the report stays in the chat only.
 - **Plan gaps.** For each plan gap, the fix is either in the code or in the plan. Say which you recommend, and if it's the plan — a missing decision, or a deliberate departure from an ADR — suggest `/architect` to record it (a new ADR superseding the old one). Never leave an ADR contradicted silently.
@@ -84,12 +87,13 @@ Draft **lesson candidates** from the findings (rule 4): a finding generalizes if
 Then ask with **one AskUserQuestion call** holding two questions:
 
 1. **"Which lessons should be recorded?"** (multiSelect) — one option per candidate, the rule as label, the finding it comes from in the description. Recommend the ones from 🔴/🟡 findings. Skip this question if there are no candidates.
-2. **"What next?"** — "Fix the 🔴 findings (Recommended)" · "Fix 🔴 + 🟡" · "Pick findings one by one" · "Nothing for now". Adjust the recommendation: no 🔴 → recommend fixing the 🟡; verdict "ready" → replace the options with "Ship it with `/ship` (Recommended)" / "Fix the ⚪ first" / "Nothing for now".
+2. **"What next?"** — "Fix the 🔴 findings (Recommended)" · "Fix 🔴 + 🟡" · "Pick findings one by one" · "Nothing for now". Adjust the recommendation: no 🔴 → recommend fixing the 🟡; verdict "ready" → replace the options with "Check it in the running app with `/verify` (Recommended)" — or "Ship it with `/ship` (Recommended)" when the change has nothing a user can see or trigger — / "Fix the ⚪ first" / "Nothing for now".
 
 Then:
 
 - **Write the chosen lessons** to `context/project/lessons.md` (create it from `templates/lessons.md`): a new `L-NNN` entry, stated as an instruction, with why and where it was seen. A recurred lesson gets a new line under **Seen** instead of a duplicate entry. Add the lesson IDs to the plan's `Lessons applied` line so later rounds know they're covered.
 - **Escalate what keeps coming back.** A lesson seen **3 times or more**, or born from a 🔴, is a sign that written advice isn't enough: propose making it automatic — a lint rule, a test, a type constraint — or at least a rule in `CLAUDE.md`. Once it's enforced, move it to the **Enforced** section: agents no longer need to remember it.
-- **Fix only what was picked**, following the `build` skill: each picked finding is an item under *Review findings*, fixed regression-test first. Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
+- **Findings the user decides not to fix** → strike them with the reason (`~~R1-3~~ won't fix — <reason>`); gates ignore them and `ship` lists them in the PR. "Nothing for now" is different: the findings stay open and the feature pauses here.
+- **Fix only what was picked**, following the `build` skill (under `endurance`, hand the picked findings to a worker instead): each picked finding is an item under *Review findings*, fixed regression-test first. Then offer a re-review of the fixes (step 2) — the fixing agent is the author again, so the same handoff applies.
 
 If `context/project/lessons.md` was just created, make sure `CLAUDE.md` points to it. The pointer `architect` installs covers `context/project/`; if there's no such pointer, add: "Before planning or writing code, read `context/project/lessons.md` — mistakes this project already made."
